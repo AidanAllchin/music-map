@@ -34,6 +34,7 @@ class SpotifyAPI:
         # TODO: Double check scope - this is from a different project
         self.scope = "user-read-currently-playing user-library-read user-read-recently-played user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative"
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET, redirect_uri=SPOTIPY_REDIRECT_URI, scope=self.scope))
+        print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.GREEN}SpotifyAPI initialized.{Style.RESET_ALL}")
 
     def refresh_token(self):
         """
@@ -44,7 +45,7 @@ class SpotifyAPI:
             try:
                 token_info = self.sp.auth_manager.refresh_access_token(token_info['refresh_token'])
             except requests.exceptions.ConnectionError:
-                print(Fore.RED + "Error: Could not connect to Spotify API. Please check your internet connection." + Style.RESET_ALL)
+                print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.RED}Error: Could not refresh token. Please check your internet connection.{Style.RESET_ALL}")
                 sys.exit(1)
         else:
             token_info = self.sp.auth_manager.get_access_token()
@@ -55,6 +56,31 @@ class SpotifyAPI:
                                                     scope=self.scope,
                                                     cache_path=os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'spotify_token.json')))
         
+    def load_playlist_to_tsv(playlist_url: str, tsv_path: str):
+        """
+        Loads a Spotify playlist to a TSV file.
+        Args:
+            playlist_url (str): URL of the Spotify playlist.
+            tsv_path (str): Path to the TSV file.
+        """
+        playlist_id = playlist_url.split('/')[-1]
+        try:
+            playlist = sp.playlist(playlist_id)
+        except spotipy.SpotifyException:
+            print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.RED}Error: Could not load playlist. Please check the playlist URL.{Style.RESET_ALL}")
+            sys.exit(1)
+
+        with open(tsv_path, 'w') as f:
+            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\n")
+            for track in playlist['tracks']['items']:
+                track_id = track['track']['id']
+                track_name = track['track']['name']
+                track_url = track['track']['external_urls']['spotify']
+                artists = ', '.join([artist['name'] for artist in track['track']['artists']])
+                album = track['track']['album']['name']
+                f.write(f"{track_id}\t{track_name}\t{track_url}\t{artists}\t{album}\n")
+        print(f"{Style.BRIGHT}{Fore.GREEN}[SpotifyAPI]: Playlist saved to {tsv_path.replace(os.path.join(os.path.dirname(__file__), '..', '..'), '')}{Style.RESET_ALL}\n")
+
 
 
 # Singleton instance of the SpotifyAPI class (for global use)
