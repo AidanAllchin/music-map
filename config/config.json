@@ -1,0 +1,11 @@
+{
+    "settings": {
+        "use_gpu": true,
+        "debug": true,
+        "gpu_percent": 0.8
+    },
+    "paths": {
+        "checkpoint_path": "./data/vggish_model/vggish_model.ckpt",
+        "pca_params_path": "./data/vggish_model/vggish_pca_params.npz"
+    }
+}
