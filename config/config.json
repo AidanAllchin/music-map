@@ -10,8 +10,8 @@
     },
     "spotify": {
         "redirect_uri": "http://localhost:8888/callback",
-        "client_id": "xx",
-        "client_secret": "xx"
+        "client_id": "",
+        "client_secret": ""
 
     }
 }

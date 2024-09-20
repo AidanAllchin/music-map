@@ -12,3 +12,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
+from src.utils.ytdl_handler import find_best_length, download_one_by_url
+
+def add_embeddings_to_tsv(tsv_path: str):
+    pass

@@ -22,8 +22,15 @@ from spotipy.oauth2 import SpotifyOAuth
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.json')
 with open(CONFIG_PATH, 'r') as f:
     config = json.load(f)
-SPOTIPY_CLIENT_ID = config['spotify']['client_id']
-SPOTIPY_CLIENT_SECRET = config['spotify']['client_secret']
+debug = config['settings']['debug']
+
+if not debug:
+    SPOTIPY_CLIENT_ID = config['spotify']['client_id']
+    SPOTIPY_CLIENT_SECRET = config['spotify']['client_secret']
+else:
+    SPOTIPY_CLIENT_ID = input("Client ID: ")
+    SPOTIPY_CLIENT_SECRET = input("Client Secret: ")
+    
 SPOTIPY_REDIRECT_URI = config['spotify']['redirect_uri']
 
 class SpotifyAPI:
