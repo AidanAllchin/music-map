@@ -1,6 +1,10 @@
 # Project-specific
 *.ckpt
 *.npz
+config/config.json
+spotify_token.json
+data/playlists/*
+*.tsv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
