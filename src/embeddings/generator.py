@@ -31,7 +31,11 @@ def embed_row(row: pd.Series) -> list:
         list: The embedding of the row [list of 128 floats].
     """
     # Download the song
-    success, file_path = download_best(row['title'], row['duration'])
+    success, file_path = download_best(
+        search_query=row['Track Name'] + ' ' + row['Artists'], 
+        target_length=row['Song Length (s)'],
+        threshold=5
+    )
 
     if not success:
         print(f"{Style.BRIGHT}[EmbeddingsGenerator]: {Style.NORMAL}{Fore.RED}Error: Could not download {row['title']}.{Style.RESET_ALL}")

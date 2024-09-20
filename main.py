@@ -44,3 +44,6 @@ def main():
     get_playlist_embedding(playlist_name)
 
     print(f"{Style.BRIGHT}[Main]: {Style.NORMAL}{Fore.GREEN}Application finished.{Style.RESET_ALL}")
+
+if __name__ == "__main__":
+    main()

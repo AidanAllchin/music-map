@@ -119,6 +119,22 @@ def download_best(search_query: str, target_length: float, threshold: int) -> Tu
     url = find_best_length(search_query, target_length, threshold)
     if url is not None:
         download_one_by_url(url)
-        return True, os.path.join(DESTINATION_PATH_WAVS, f"yt_id_{url.split('=')[-1]}.mp3")
+        path = os.path.join(DESTINATION_PATH_WAVS, f"yt_id_{url.split('=')[-1]}.mp3")
+        convert_to_wav(path)
+        return True, path[:-4] + '.wav'
     else:
         return False, None
+    
+def convert_to_wav(file: str):
+    """
+    Converts an audio file to WAV format.
+
+    Args:
+        file (str): The path to the audio file.
+
+    Returns:
+        str: The path to the converted WAV file.
+    """
+    wav_file = file.replace('.mp3', '.wav')
+    os.system(f"ffmpeg -i {file} -acodec pcm_s16le -ac 1 -ar 16000 {wav_file}")
+    return wav_file

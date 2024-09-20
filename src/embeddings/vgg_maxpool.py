@@ -32,11 +32,11 @@ logging.getLogger('tensorflow').setLevel(logging.ERROR)
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 # Set random seed for reproducibility
-tf.random.set_seed(42)
+tf.set_random_seed(42)
 np.random.seed(42)
 
 
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config', 'config.json')
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.json')
 with open(CONFIG_PATH, 'r') as f:
     config = json.load(f)
 use_gpu     = config['settings']['use_gpu']
