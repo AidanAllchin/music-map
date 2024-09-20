@@ -7,6 +7,10 @@ This script is used to download the VGGish model files and create the necessary 
 import os, sys, subprocess, json
 
 # Install the required packages
+if not os.path.exists("requirements.txt"):
+    print("Error: requirements.txt not found.")
+    sys.exit(1)
+
 subprocess.run(["pip", "install", "-r", "requirements.txt"])
 
 # Create directories
@@ -23,8 +27,20 @@ elif not os.path.exists("data/embeddings"):
     os.makedirs("data/embeddings")
 
 # Download the VGGish model files (WIP)
-subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_model.ckpt", "-O", "data/vggish_model/vggish_model.ckpt"])
-subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_pca_params.npz", "-O", "data/vggish_model/vggish_pca_params.npz"])
+if not os.path.exists("data/vggish_model/vggish_model.ckpt") or not os.path.exists("data/vggish_model/vggish_pca_params.npz"):
+    sys_type = sys.platform
+    if sys_type == "linux":
+        subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_model.ckpt", "-O", "data/vggish_model/vggish_model.ckpt"])
+        subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_pca_params.npz", "-O", "data/vggish_model/vggish_pca_params.npz"])
+    elif sys_type == "win32":
+        subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_model.ckpt", "-O", "data/vggish_model/vggish_model.ckpt"])
+        subprocess.run(["wget", "https://storage.googleapis.com/audioset/vggish_pca_params.npz", "-O", "data/vggish_model/vggish_pca_params.npz"])
+    # mac doesn't have wget
+    elif sys_type == "darwin":
+        subprocess.run(["curl", "https://storage.googleapis.com/audioset/vggish_model.ckpt", "-o", "data/vggish_model/vggish_model.ckpt"])
+        subprocess.run(["curl", "https://storage.googleapis.com/audioset/vggish_pca_params.npz", "-o", "data/vggish_model/vggish_pca_params.npz"])
+else:
+    print("VGGish model files already downloaded.")
 
 # Set up SpotifyAPI
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config', 'config.json')

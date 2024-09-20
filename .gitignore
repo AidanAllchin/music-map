@@ -4,6 +4,8 @@
 spotify_token.json
 data/playlists/*
 *.tsv
+*.wav
+*.mp3
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

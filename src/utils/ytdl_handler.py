@@ -6,20 +6,30 @@ Organizes, downloads, and checks the waveforms of songs from YouTube.
 
 import os, sys
 from pathlib import Path
-import time
 
 # Add the project root to the Python path
 project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
+import time
+import json
+import asyncio
 from typing import Tuple
 import yt_dlp
 import contextlib
+import subprocess
+from src.utils.log_suppression import SuppressLogger
 
-DESTINATION_PATH_WAVS = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'waveforms')
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.json')
 
-def find_best_length(search_query, target_length, threshold) -> str:
+with open(CONFIG_PATH, 'r') as f:
+    config = json.load(f)
+debug = config['settings']['debug']
+
+AUDIO_DEST_PATH = os.path.join(os.path.dirname(__file__), "..", "..", config['paths']['audio_destination_path'])
+
+async def find_best_link(search_query: str, target_length: float, threshold: int) -> str:
     ydl_opts = {
         'quiet': True,
         'default_search': 'ytsearch10',  # Search and return top 10 results
@@ -28,15 +38,21 @@ def find_best_length(search_query, target_length, threshold) -> str:
     }
     search_query = search_query.replace(':', '-')
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        result = ydl.extract_info(search_query, download=False)
+    # Make it asynchronous for use in the batching
+    async def extract_info_async(ydl_opts, search_query):
+        loop = asyncio.get_event_loop()
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            return await loop.run_in_executor(None, lambda: ydl.extract_info(search_query, download=False))
     
+    # Extract the metadata
+    results = await extract_info_async(ydl_opts, search_query)
+
     video_lengths = []
     video_urls    = []
     
     # Extract the video lengths and URLs
-    if 'entries' in result:
-        for entry in result['entries']:
+    if 'entries' in results:
+        for entry in results['entries']:
             video_lengths.append(entry['duration'])
             video_urls.append(f"https://www.youtube.com/watch?v={entry['id']}")
     
@@ -49,60 +65,69 @@ def find_best_length(search_query, target_length, threshold) -> str:
             continue
         length = float(length)
         diff = abs(length - target_length)
+
+        # Update the best video if the current one is closer
         if diff < best_diff:
             best_diff = diff
             best_length = length
             best_url = url
 
-    print(f"[ytdlp]: {Style.DIM} Target: {target_length}, Best: {best_length}, Diff: {best_diff}{Style.RESET_ALL}")
+    if debug:
+        print(f"[ytdlp]: {Style.DIM} Target: {target_length}, Best: {best_length}, Diff: {best_diff}{Style.RESET_ALL}")
 
     if best_diff < threshold:
         #print(f"Best URL: {best_url}")
         return best_url
     else:
-        print(f"[ytdlp]: {Style.DIM}No video found within threshold.{Style.RESET_ALL}")
+        print(f"{Fore.RED}[ytdlp]: {Style.DIM}No video found within threshold.{Style.RESET_ALL}")
         return None
     
-def download_one_by_url(url):
-    id = url.split('=')[-1]
-    def download_youtube_audio(search_for: str):
-        #subprocess.run(['sudo', 'rm', '-rf', '~/.cache/yt-dlp'], check=True)
+async def download_one_by_url(sp_id: int, url: str):
+    p = os.path.join(AUDIO_DEST_PATH, f"sp_id_{sp_id}.mp3")
+    if os.path.exists(p):
+        print(f"{Fore.RED}[ytdlp]: {Style.DIM}File already exists: {p}{Style.RESET_ALL}")
+        return
 
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '192',
-            }],
-            'cachedir': False,
-            'quiet': True,
-            # Save the file as to_embed.mp3
-            'outtmpl': os.path.join(DESTINATION_PATH_WAVS, f"yt_id_{id}.mp3")
-        }
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+        'cachedir': False,
+        'quiet': True,
+        # Save the file as to_embed.mp3
+        'outtmpl': p,
+        "logger": SuppressLogger() if not debug else None
+    }
+
+    async def download_youtube_audio():
+        subprocess.run(['sudo', 'rm', '-rf', '~/.cache/yt-dlp'], check=True)
+        loop = asyncio.get_event_loop()
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            retries = 0
-            while retries < 5:
+            for attempt in range(5):
                 try:
-                    ydl.download([url])
+                    await loop.run_in_executor(None, lambda: ydl.download([url]))
                     break
-                except yt_dlp.utils.DownloadError as e:
-                    time.sleep(1)
-                    retries += 1
-                    print("Error downloading audio: " + str(e))
-            
-            if retries == 3:
-                #print("Failed to download audio for: " + search_for)
-                raise Exception("Failed to download audio for: " + search_for)
+                except yt_dlp.DownloadError as e:
+                    print(f"{Fore.RED}[ytdlp]: {Style.DIM}Download failed. Retrying...{Style.RESET_ALL}")
+                    time.sleep(5)
+                    if attempt == 4:
+                        print(f"{Fore.RED}[ytdlp]: {Style.DIM}Download failed after 5 attempts.{Style.RESET_ALL}")
+                        raise e
 
     # Supress all output from the below function
-    with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
-        sys.stdout = f
-        download_youtube_audio(url)
-    sys.stdout = sys.__stdout__
+    if not debug:
+        with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
+            sys.stdout = f
+            await download_youtube_audio(url)
+        sys.stdout = sys.__stdout__
+    else:
+        await download_youtube_audio(url)
     
-def download_best(search_query: str, target_length: float, threshold: int) -> Tuple[bool, str]:
+def download_best(search_query: str, target_length: float, threshold: int, sp_id: int = None) -> Tuple[bool, str]:
     """
     Downloads the best matching video based on the search query and target length.
 
@@ -116,10 +141,14 @@ def download_best(search_query: str, target_length: float, threshold: int) -> Tu
             - bool: True if a video was found and downloaded, False otherwise.
             - str: The path to the downloaded video.
     """
-    url = find_best_length(search_query, target_length, threshold)
+    url = find_best_link(search_query, target_length, threshold)
+
+    if sp_id is None:
+        sp_id = input("Enter the Spotify ID: ")
+
     if url is not None:
         download_one_by_url(url)
-        path = os.path.join(DESTINATION_PATH_WAVS, f"yt_id_{url.split('=')[-1]}.mp3")
+        path = os.path.join(AUDIO_DEST_PATH, f"yt_id_{url.split('=')[-1]}.mp3")
         convert_to_wav(path)
         return True, path[:-4] + '.wav'
     else:
