@@ -4,6 +4,7 @@
 Retrieves tsv files and generates embeddings for them.
 """
 
+import asyncio
 import os, sys
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from src.embeddings.vgg_maxpool import extract_one_embedding
 import pandas as pd
 from tqdm import tqdm
 
-def embed_row(row: pd.Series) -> list:
+async def embed_row(row: pd.Series) -> list:
     """
     Embeds a row of the dataframe.
 
@@ -31,10 +32,11 @@ def embed_row(row: pd.Series) -> list:
         list: The embedding of the row [list of 128 floats].
     """
     # Download the song
-    success, file_path = download_best(
+    success, file_path = await download_best(
         search_query=row['Track Name'] + ' ' + row['Artists'], 
         target_length=row['Song Length (s)'],
-        threshold=5
+        threshold=5,
+        sp_id=row['Track ID']
     )
 
     if not success:
@@ -46,7 +48,7 @@ def embed_row(row: pd.Series) -> list:
 
     return embedding
 
-def add_embeddings_to_tsv(tsv_path: str):
+async def add_embeddings_to_tsv(tsv_path: str):
     """
     Adds embeddings to a TSV file.
 
@@ -84,7 +86,7 @@ def add_embeddings_to_tsv(tsv_path: str):
     embeddings = []
 
     for _, row in tqdm(df.iterrows(), desc="Embedding rows", total=df.shape[0]):
-        embeddings.append(embed_row(row))
+        embeddings.append(await embed_row(row))
 
     # Add the embeddings to the dataframe
     df['embeddings'] = embeddings
@@ -95,4 +97,4 @@ def add_embeddings_to_tsv(tsv_path: str):
     print(f"{Style.BRIGHT}[EmbeddingsGenerator]: {Style.NORMAL}{Fore.GREEN}Embeddings added to {tsv_path}.{Style.RESET_ALL}")
 
 if __name__ == "__main__":
-    add_embeddings_to_tsv(sys.argv[1])
+    asyncio.run(add_embeddings_to_tsv(sys.argv[1]))

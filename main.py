@@ -12,11 +12,12 @@ project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
+import asyncio
 from src.interface.spotify_utils import sp
 from src.embeddings.generator import add_embeddings_to_tsv
 from src.embeddings.vgg_maxpool import extract_one_embedding
 
-def get_playlist_embedding(playlist_name: str):
+async def get_playlist_embedding(playlist_name: str):
     """
     Extracts the embedding for a playlist.
     """
@@ -28,7 +29,7 @@ def get_playlist_embedding(playlist_name: str):
     sp.load_playlist_to_tsv(playlist_id, tsv_path)
 
     # Add the embeddings to the TSV
-    add_embeddings_to_tsv(tsv_path)
+    await add_embeddings_to_tsv(tsv_path)
 
 
 def main():
@@ -41,7 +42,7 @@ def main():
     playlist_name = input("Enter the name of the playlist: ")
 
     # Extract the embedding for the playlist
-    get_playlist_embedding(playlist_name)
+    asyncio.run(get_playlist_embedding(playlist_name))
 
     print(f"{Style.BRIGHT}[Main]: {Style.NORMAL}{Fore.GREEN}Application finished.{Style.RESET_ALL}")
 

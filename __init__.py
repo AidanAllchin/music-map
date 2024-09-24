@@ -19,6 +19,7 @@ if not os.path.exists("data"):
     os.makedirs("data/vggish_model")
     os.makedirs("data/waveforms")
     os.makedirs("data/embeddings")
+    os.makedirs("data/playlists")
 elif not os.path.exists("data/vggish_model"):
     os.makedirs("data/vggish_model")
 elif not os.path.exists("data/waveforms"):

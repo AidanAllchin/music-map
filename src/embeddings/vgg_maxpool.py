@@ -15,11 +15,13 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
+print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.LIGHTCYAN_EX}Loading TensorFlow. This may take a while...{Style.RESET_ALL}")
 import json
 import time
 import numpy as np
 import logging
 import tensorflow.compat.v1 as tf # type: ignore
+print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.CYAN}TensorFlow version: {tf.__version__} loaded.{Style.RESET_ALL}")
 from src.embeddings.vgg import vggish_input
 from src.embeddings.vgg import vggish_params
 from src.embeddings.vgg import vggish_postprocess

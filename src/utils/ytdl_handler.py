@@ -102,14 +102,14 @@ async def download_one_by_url(sp_id: int, url: str):
         "logger": SuppressLogger() if not debug else None
     }
 
-    async def download_youtube_audio():
+    async def download_youtube_audio(u: str = url):
         subprocess.run(['sudo', 'rm', '-rf', '~/.cache/yt-dlp'], check=True)
         loop = asyncio.get_event_loop()
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             for attempt in range(5):
                 try:
-                    await loop.run_in_executor(None, lambda: ydl.download([url]))
+                    await loop.run_in_executor(None, lambda: ydl.download([u]))
                     break
                 except yt_dlp.DownloadError as e:
                     print(f"{Fore.RED}[ytdlp]: {Style.DIM}Download failed. Retrying...{Style.RESET_ALL}")
@@ -122,12 +122,12 @@ async def download_one_by_url(sp_id: int, url: str):
     if not debug:
         with open(os.devnull, 'w') as f, contextlib.redirect_stdout(f):
             sys.stdout = f
-            await download_youtube_audio(url)
+            await download_youtube_audio()
         sys.stdout = sys.__stdout__
     else:
-        await download_youtube_audio(url)
+        await download_youtube_audio()
     
-def download_best(search_query: str, target_length: float, threshold: int, sp_id: int = None) -> Tuple[bool, str]:
+async def download_best(search_query: str, target_length: float, threshold: int, sp_id: int = None) -> Tuple[bool, str]:
     """
     Downloads the best matching video based on the search query and target length.
 
@@ -141,13 +141,13 @@ def download_best(search_query: str, target_length: float, threshold: int, sp_id
             - bool: True if a video was found and downloaded, False otherwise.
             - str: The path to the downloaded video.
     """
-    url = find_best_link(search_query, target_length, threshold)
+    url = await find_best_link(search_query, target_length, threshold)
 
     if sp_id is None:
         sp_id = input("Enter the Spotify ID: ")
 
     if url is not None:
-        download_one_by_url(url)
+        await download_one_by_url(sp_id, url)
         path = os.path.join(AUDIO_DEST_PATH, f"yt_id_{url.split('=')[-1]}.mp3")
         convert_to_wav(path)
         return True, path[:-4] + '.wav'
