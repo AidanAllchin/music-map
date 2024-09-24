@@ -16,6 +16,9 @@ from colorama import Fore, Style
 import requests
 import spotipy
 import time
+import webbrowser
+import threading
+from flask import Flask, redirect, request # type: ignore
 import json
 from spotipy.oauth2 import SpotifyOAuth
 
@@ -32,41 +35,64 @@ else:
     SPOTIPY_CLIENT_SECRET = input("Client Secret: ")
 
 SPOTIPY_REDIRECT_URI = config['spotify']['redirect_uri']
+SPOTIPY_REDIRECT_PORT= SPOTIPY_REDIRECT_URI.split(':')[-1].split('/')[0]
+CACHE_PATH = config['paths']['spotify_token_path']
+CACHE_PATH = os.path.join(os.path.dirname(__file__), '..', '..') + CACHE_PATH
+
+# Using Flask to handle the authentication
+app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
 class SpotifyAPI:
     def __init__(self):
         """
         Initializes a new instance of the SpotifyAPI class.
         """
-        # TODO: Double check scope - this is from a different project
-        self.scope = "user-read-currently-playing user-library-read user-read-recently-played user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative"
-        self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET, redirect_uri=SPOTIPY_REDIRECT_URI, scope=self.scope))
+        self.scope = "user-library-read playlist-read-private playlist-read-collaborative"
+        self.sp = None
+        self.auth_manager=SpotifyOAuth(
+            client_id=SPOTIPY_CLIENT_ID, 
+            client_secret=SPOTIPY_CLIENT_SECRET, 
+            redirect_uri=SPOTIPY_REDIRECT_URI, 
+            scope=self.scope,
+            show_dialog=True,
+            cache_path=CACHE_PATH
+        )
         print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.GREEN}SpotifyAPI initialized.{Style.RESET_ALL}")
+
+    def authenticate(self):
+        @app.route('/')
+        def index():
+            return redirect(self.auth_manager.get_authorize_url())
+        
+        @app.route('/callback')
+        def callback():
+            if request.args.get('code'):
+                self.auth_manager.get_access_token(request.args['code'], as_dict=False)
+                self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+                return "Authentication successful. You can now close this tab."
+            else:
+                return "Error: Authentication failed."
+            
+        print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.GREEN}Please authenticate with Spotify by visiting the following link:{Style.RESET_ALL}")
+        webbrowser.open_new_tab(f'{SPOTIPY_REDIRECT_URI.split("/callback")[0]}')
+        threading.Thread(target=lambda: app.run(port=SPOTIPY_REDIRECT_PORT)).start()
 
     def refresh_token(self):
         """
         Refreshes the access token if it has expired.
         """
-        token_info = self.sp.auth_manager.get_cached_token()
-        if token_info != None:
-            try:
-                token_info = self.sp.auth_manager.refresh_access_token(token_info['refresh_token'])
-            except requests.exceptions.ConnectionError:
-                print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.RED}Error: Could not refresh token. Please check your internet connection.{Style.RESET_ALL}")
-                sys.exit(1)
+        if self.sp:
+            token = self.auth_manager.get_cached_token()['refresh_token']
+            self.auth_manager.refresh_access_token(token)
         else:
-            token_info = self.sp.auth_manager.get_access_token()
-            #self.sp.auth_manager.cache_token(token_info, os.path.join(os.path.dirname(__file__), '..', 'data', 'spotify_token.json')) # Without specifying the cache path, the token is saved to the default cache path
-        self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=SPOTIPY_CLIENT_ID,
-                                                    client_secret=SPOTIPY_CLIENT_SECRET,
-                                                    redirect_uri=SPOTIPY_REDIRECT_URI,
-                                                    scope=self.scope,
-                                                    cache_path=os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'spotify_token.json')))
+            self.authenticate()
+            self.refresh_token()
     
     def load_playlist_to_tsv(self, playlist_uri: str, tsv_path: str):
         """
         Loads a Spotify playlist to a TSV file.
-        
+
         Args:
             playlist_url (str): URL of the Spotify playlist.
             tsv_path (str): Path to the TSV file.
@@ -142,10 +168,11 @@ class SpotifyAPI:
 
 # Singleton instance of the SpotifyAPI class (for global use)
 sp = SpotifyAPI()
-sp.refresh_token()
+#sp.refresh_token()
+#sp.authenticate()
 
 if __name__ == "__main__":
     plist = "Driving Through Clouds"
     tsv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', f'{plist.lower().replace(' ', '_')}.tsv')
-    sp.load_playlist_to_tsv(plist, tsv)
+    # sp.load_playlist_to_tsv(plist, tsv)
 

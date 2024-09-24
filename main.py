@@ -13,6 +13,7 @@ sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
 import asyncio
+import time
 from src.interface.spotify_utils import sp
 from src.embeddings.generator import add_embeddings_to_tsv, download_and_embed_tsv
 #from src.embeddings.vgg_maxpool import extract_one_embedding
@@ -38,6 +39,13 @@ def main():
     """
     print(f"{Style.BRIGHT}[Main]: {Style.NORMAL}{Fore.GREEN}Starting the application...{Style.RESET_ALL}")
 
+    # Authenticate the Spotify API
+    sp.authenticate()
+
+    while sp.sp is None:
+        print(f"{Style.BRIGHT}[Main]: {Style.NORMAL}{Fore.YELLOW}Please authenticate the Spotify API...{Style.RESET_ALL}", end="\r", flush=True)
+        time.sleep(1)
+
     # Get the playlist name
     playlist_name = input("Enter the name of the playlist: ")
 
@@ -45,6 +53,7 @@ def main():
     asyncio.run(get_playlist_embedding(playlist_name))
 
     print(f"{Style.BRIGHT}[Main]: {Style.NORMAL}{Fore.GREEN}Application finished.{Style.RESET_ALL}")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

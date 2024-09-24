@@ -13,11 +13,18 @@ sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
 import asyncio
+import json
 from src.utils.ytdl_handler import download_best
 from src.utils.download_songs import download_songs
 from src.embeddings.vgg_maxpool import extract_one_embedding
 import pandas as pd
 from tqdm import tqdm
+
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.json')
+with open(CONFIG_PATH, 'r') as f:
+    config = json.load(f)
+
+WAVEFORM_PATH = os.path.join(os.path.dirname(__file__), '..', '..', config['paths']['audio_destination_path'][1:])
 
 async def embed_row(row: pd.Series, pre_downloaded: bool = False) -> list:
     """
@@ -48,6 +55,8 @@ async def embed_row(row: pd.Series, pre_downloaded: bool = False) -> list:
         if not success:
             print(f"{Style.BRIGHT}[EmbeddingsGenerator]: {Style.NORMAL}{Fore.RED}Error: Could not download {row['Track Name']} ({row['Track ID']}).{Style.RESET_ALL}")
             return None
+    else:
+        file_path = WAVEFORM_PATH + f"sp_id_{row['Track ID']}.mp3"
 
     # Generate the embeddings
     embedding = extract_one_embedding(file=file_path)

@@ -8,7 +8,8 @@
         "checkpoint_path": "./data/vggish_model/vggish_model.ckpt",
         "pca_params_path": "./data/vggish_model/vggish_pca_params.npz",
         "audio_destination_path": "/data/waveforms/",
-        "yt_links_path": "/data/embeddings/yt_links_for_songs.tsv"
+        "yt_links_path": "/data/embeddings/yt_links_for_songs.tsv",
+        "spotify_token_path": "/config/spotify_token.json"
     },
     "spotify": {
         "redirect_uri": "http://localhost:8888/callback",
