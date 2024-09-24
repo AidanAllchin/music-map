@@ -165,6 +165,54 @@ class SpotifyAPI:
                 return playlist['uri']
         return None
 
+    def get_user_saved_tracks(self):
+        """
+        Retrieves the user's saved tracks (liked songs) with their added dates.
+
+        Returns:
+            list: A list of dictionaries containing information about the user's saved tracks.
+                Each dictionary contains the following keys:
+                - 'track_id': The ID of the track.
+                - 'track_name': The name of the track.
+                - 'track_url': The Spotify URL of the track.
+                - 'artists': The artists of the track.
+                - 'album': The album of the track.
+                - 'song_length': The length of the track in seconds.
+                - 'added_at': The date and time the track was saved.
+        """
+        results = self.sp.current_user_saved_tracks()
+        tracks = []
+        while results:
+            for item in results['items']:
+                track = item['track']
+                tracks.append({
+                    'track_id': track['id'],
+                    'track_name': track['name'],
+                    'track_url': track['external_urls']['spotify'],
+                    'artists': ', '.join([artist['name'] for artist in track['artists']]),
+                    'album': track['album']['name'],
+                    'song_length': track['duration_ms'] / 1000,
+                    'added_at': item['added_at']  # This is the timestamp we're interested in
+                })
+            if results['next']:
+                results = self.sp.next(results)
+            else:
+                results = None
+        print(f"{Style.NORMAL}[SpotifyAPI]: {Style.DIM}{Fore.LIGHTGREEN_EX}Retrieved {len(tracks)} liked songs.{Style.RESET_ALL}")
+        return tracks
+    
+    def load_likes_to_tsv(self):
+        """
+        Loads the user's liked songs to a TSV file.
+        """
+        print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.CYAN}Saving liked songs to TSV...{Style.RESET_ALL}", end='\r', flush=True)
+        tsv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'likes.tsv')
+        tracks = self.get_user_saved_tracks()
+        with open(tsv_path, 'w') as f:
+            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\tSong Length (s)\tAdded At\n")
+            for track in tracks:
+                f.write(f"{track['track_id']}\t{track['track_name']}\t{track['track_url']}\t{track['artists']}\t{track['album']}\t{track['song_length']}\t{track['added_at']}\n")
+        print(f"\n{Style.BRIGHT}{Fore.GREEN}[SpotifyAPI]: Liked songs saved to {tsv_path.replace(os.path.join(os.path.dirname(__file__), '..', '..'), '')}{Style.RESET_ALL}\n")
 
 # Singleton instance of the SpotifyAPI class (for global use)
 sp = SpotifyAPI()
@@ -172,7 +220,14 @@ sp = SpotifyAPI()
 #sp.authenticate()
 
 if __name__ == "__main__":
-    plist = "Driving Through Clouds"
-    tsv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', f'{plist.lower().replace(' ', '_')}.tsv')
+    sp.authenticate()
+    while sp.sp is None:
+        print(f"{Style.BRIGHT}[SpotifyAPI]: {Style.NORMAL}{Fore.RED}Error: SpotifyAPI not authenticated. Please authenticate first.{Style.RESET_ALL}", end='\r', flush=True)
+        time.sleep(1)
+    
+    #plist = "Driving Through Clouds"
+    #tsv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', f'{plist.lower().replace(' ', '_')}.tsv')
     # sp.load_playlist_to_tsv(plist, tsv)
 
+    
+    #sp.load_likes_to_tsv()
