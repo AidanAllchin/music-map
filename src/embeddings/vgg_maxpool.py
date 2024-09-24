@@ -20,6 +20,7 @@ import json
 import time
 import numpy as np
 import logging
+import warnings
 import tensorflow.compat.v1 as tf # type: ignore
 print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.CYAN}TensorFlow version: {tf.__version__} loaded.{Style.RESET_ALL}")
 from src.embeddings.vgg import vggish_input
@@ -32,6 +33,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 # Suppress deprecation warnings
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+warnings.filterwarnings("ignore")
+tf.compat.v1.disable_eager_execution()
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 # Set random seed for reproducibility
 tf.set_random_seed(42)
@@ -100,6 +105,9 @@ def extract_one_embedding(file: str) -> np.ndarray:
         config.gpu_options.visible_device_list = '' # Force CPU use
         if debug:
             print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.LIGHTCYAN_EX}GPU disabled. Using CPU...{Style.RESET_ALL}")
+
+    config.log_device_placement = False
+    config.allow_soft_placement = True
 
     overall_start = time.time()
     

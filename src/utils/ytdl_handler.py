@@ -8,7 +8,7 @@ import os, sys
 from pathlib import Path
 
 # Add the project root to the Python path
-project_root = Path(__file__).resolve().parent
+project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from colorama import Fore, Style
@@ -27,7 +27,7 @@ with open(CONFIG_PATH, 'r') as f:
     config = json.load(f)
 debug = config['settings']['debug']
 
-AUDIO_DEST_PATH = os.path.join(os.path.dirname(__file__), "..", "..", config['paths']['audio_destination_path'])
+AUDIO_DEST_PATH = os.path.join(os.path.dirname(__file__), "..", "..") + config['paths']['audio_destination_path']
 
 async def find_best_link(search_query: str, target_length: float, threshold: int) -> str:
     ydl_opts = {
@@ -73,7 +73,7 @@ async def find_best_link(search_query: str, target_length: float, threshold: int
             best_url = url
 
     if debug:
-        print(f"{Style.DIM}[ytdlp]: Target: {target_length}, Best: {best_length}, Diff: {best_diff}{Style.RESET_ALL}")
+        print(f"{Style.DIM}[ytdlp]: Target: {target_length}, Best: {best_length}, Diff: {round(best_diff, 3)}{Style.RESET_ALL}")
 
     if best_diff < threshold:
         #print(f"Best URL: {best_url}")
@@ -83,8 +83,9 @@ async def find_best_link(search_query: str, target_length: float, threshold: int
         return None
     
 async def download_one_by_url(sp_id: int, url: str):
-    p = os.path.join(AUDIO_DEST_PATH, f"sp_id_{sp_id}.mp3")
-    if os.path.exists(p):
+    p = os.path.join(AUDIO_DEST_PATH, f"sp_id_{sp_id}")
+    # print(p)
+    if os.path.exists(p + ".mp3"):
         print(f"{Fore.RED}[ytdlp]: {Style.DIM}File already exists: {p}{Style.RESET_ALL}")
         return
 
@@ -110,7 +111,7 @@ async def download_one_by_url(sp_id: int, url: str):
             for attempt in range(5):
                 try:
                     if debug:
-                        print(f"{Fore.LIGHTBLUE_EX}[ytdlp]: {Style.DIM}Attempting download of {u} to {p}...{Style.RESET_ALL}")
+                        print(f"{Fore.LIGHTBLUE_EX}[ytdlp]: {Style.DIM}Attempting download of {u} to {p}.mp3...{Style.RESET_ALL}")
                     await loop.run_in_executor(None, lambda: ydl.download([u]))
                     break
                 except yt_dlp.DownloadError as e:
@@ -150,9 +151,10 @@ async def download_best(search_query: str, target_length: float, threshold: int,
 
     if url is not None:
         await download_one_by_url(sp_id, url)
-        path = os.path.join(AUDIO_DEST_PATH, f"yt_id_{url.split('=')[-1]}.mp3")
-        convert_to_wav(path)
-        return True, path[:-4] + '.wav'
+        #path = os.path.join(AUDIO_DEST_PATH, f"yt_id_{url.split('=')[-1]}.mp3")
+        path = os.path.join(AUDIO_DEST_PATH, f"sp_id_{sp_id}.mp3")
+        #convert_to_wav(path)
+        return True, path#path[:-4] + '.wav'
     else:
         return False, None
     
@@ -169,3 +171,7 @@ def convert_to_wav(file: str):
     wav_file = file.replace('.mp3', '.wav')
     os.system(f"ffmpeg -i {file} -acodec pcm_s16le -ac 1 -ar 16000 {wav_file}")
     return wav_file
+
+if __name__ == "__main__":
+    # Tests
+    asyncio.run(download_best("Awaken - Alternate Version by Alex Baker", 393.333, 5, "3pLlcz1uuEqas5TkVzGiRe"))
