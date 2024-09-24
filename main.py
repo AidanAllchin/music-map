@@ -14,8 +14,8 @@ sys.path.insert(0, str(project_root))
 from colorama import Fore, Style
 import asyncio
 from src.interface.spotify_utils import sp
-from src.embeddings.generator import add_embeddings_to_tsv
-from src.embeddings.vgg_maxpool import extract_one_embedding
+from src.embeddings.generator import add_embeddings_to_tsv, download_and_embed_tsv
+#from src.embeddings.vgg_maxpool import extract_one_embedding
 
 async def get_playlist_embedding(playlist_name: str):
     """
@@ -29,7 +29,7 @@ async def get_playlist_embedding(playlist_name: str):
     sp.load_playlist_to_tsv(playlist_id, tsv_path)
 
     # Add the embeddings to the TSV
-    await add_embeddings_to_tsv(tsv_path)
+    await download_and_embed_tsv(tsv_path)
 
 
 def main():

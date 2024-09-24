@@ -30,7 +30,7 @@ if not debug:
 else:
     SPOTIPY_CLIENT_ID = input("Client ID: ")
     SPOTIPY_CLIENT_SECRET = input("Client Secret: ")
-    
+
 SPOTIPY_REDIRECT_URI = config['spotify']['redirect_uri']
 
 class SpotifyAPI:
@@ -66,6 +66,7 @@ class SpotifyAPI:
     def load_playlist_to_tsv(self, playlist_uri: str, tsv_path: str):
         """
         Loads a Spotify playlist to a TSV file.
+        
         Args:
             playlist_url (str): URL of the Spotify playlist.
             tsv_path (str): Path to the TSV file.

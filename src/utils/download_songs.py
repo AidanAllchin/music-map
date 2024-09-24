@@ -17,7 +17,7 @@ import os
 import json
 import pandas as pd
 from typing import Tuple
-from src.utils.ytdl_handler import find_best_link, download_one_by_url
+from src.utils.ytdl_handler import find_best_link, download_one_by_url, download_best
 import tqdm
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "config.json")
@@ -153,48 +153,41 @@ async def download_songs_batch(songs_batch, start_index: int, pbar):
     tasks = [download_song(song, start_index + i, pbar) for i, song in enumerate(songs_batch)]
     return await asyncio.gather(*tasks)
 
-async def download_songs(tsv_loc: str):
-    # Read the TSV file
-    if not os.path.exists(tsv_loc):
-        print(f"Error: TSV file not found at {tsv_loc}")
-        return
-    files_to_download = pd.read_csv(tsv_loc, sep="\t")
+async def download_songs(frame: pd.DataFrame):
+    """
+    Asynchronously downloads songs based on information in the provided
+    DataFrame. This function processes each song in the DataFrame concurrently,
+    searching for the best link and downloading the song if a suitable link is 
+    found. As each song is saved based on its Spotify ID, nothing needs to be
+    returned.
 
-    # Check if the updated CSV exists and find the last processed song
-    updated_file_path = "songs_with_files.csv"
-    last_processed_index = -1
-    if os.path.exists(updated_file_path):
-        df_updated = pd.read_csv(updated_file_path)
-        last_processed_index = df_updated.index.max()
-        df_dict = df_dict[last_processed_index + 1:]
-
-    # Create the output directory if it doesn't exist
-    os.makedirs("songs", exist_ok=True)
-
-    # Download songs in batches of 100
-    batch_size = 100
-    total_songs = len(df_dict)
-    pbar = tqdm.tqdm(total=total_songs, desc="Downloading songs")
-    
-    for i in range(0, total_songs, batch_size):
-        batch = df_dict[i : i + batch_size]
-        batch_results = await download_songs_batch(batch, last_processed_index + 1 + i, pbar)
-
-        # Update the DataFrame with file paths and URLs
-        df_batch = pd.DataFrame(batch)
-        df_batch["file_path"], df_batch["song_url"] = (
-            zip(*batch_results) if batch_results else (None, None)
+    Args:
+        frame (pd.DataFrame): DataFrame containing columns 'Track Name', 'Artists', 
+                              'Song Length (s)', and the index as Spotify IDs.
+    """
+    async def process_song(row):
+        spotify_id = row['Track ID']
+        search_query = f"{row['Track Name']} by {row['Artists']}"
+        success, file_path = await download_best(
+            search_query=search_query,
+            target_length=row['Song Length (s)'],
+            threshold=5, # Allow a 5-second deviation from the target length
+            sp_id=spotify_id
         )
+        return success, file_path
 
-        # Remove rows where download failed (file_id is None)
-        df_batch = df_batch.dropna(subset=["file_id"])
+    # Create a progress bar
+    pbar = tqdm.tqdm(total=len(frame), desc="Downloading songs")
 
-        # Append to the updated CSV or create it if it doesn't exist
-        header = not os.path.exists(updated_file_path)
-        df_batch.to_csv(updated_file_path, mode="a", index=False, header=header)
-    
+    # Process songs concurrently
+    tasks = [process_song(row) for _, row in frame.iterrows()]
+    results = await asyncio.gather(*tasks)
+
+    # Update progress bar
+    pbar.update(len(results))
     pbar.close()
-    print("Download complete. Updated CSV saved or appended to 'songs_with_files.csv'")
 
-if __name__ == "__main__":
-    asyncio.run(download_songs())
+    print(f"{Fore.GREEN}Finished downloading songs.{Style.RESET_ALL}")
+
+# if __name__ == "__main__":
+#     asyncio.run(download_songs())
