@@ -15,6 +15,7 @@ sys.path.insert(0, str(project_root))
 from colorama import Fore, Style
 import requests
 import spotipy
+from datetime import datetime
 import time
 import webbrowser
 import threading
@@ -110,15 +111,16 @@ class SpotifyAPI:
             sys.exit(1)
 
         with open(tsv_path, 'w') as f:
-            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\tSong Length (s)\n")
+            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\tSong Length (s)\tMetrics\n")
             for track in playlist['tracks']['items']:
                 track_id = track['track']['id']
+                metrics = self.get_spotify_metrics(track_id)
                 track_name = track['track']['name']
                 track_url = track['track']['external_urls']['spotify']
                 artists = ', '.join([artist['name'] for artist in track['track']['artists']])
                 album = track['track']['album']['name']
                 song_length = track['track']['duration_ms'] / 1000
-                f.write(f"{track_id}\t{track_name}\t{track_url}\t{artists}\t{album}\t{song_length}\n")
+                f.write(f"{track_id}\t{track_name}\t{track_url}\t{artists}\t{album}\t{song_length}\t{json.dumps(metrics)}\n")
         print(f"{Style.BRIGHT}{Fore.GREEN}[SpotifyAPI]: Playlist saved to {tsv_path.replace(os.path.join(os.path.dirname(__file__), '..', '..'), '')}{Style.RESET_ALL}\n")
 
     def get_playlists(self):
@@ -165,6 +167,38 @@ class SpotifyAPI:
                 return playlist['uri']
         return None
 
+    def get_song_analysis(self, song_id: str) -> dict:
+        """
+        Retrieves the analysis of a song from Spotify.
+
+        Args:
+            song_id (str): The ID of the song.
+
+        Returns:
+            dict: A dictionary containing the analysis of the song.
+        """
+        analysis = self.sp.audio_analysis(song_id)
+        return analysis
+
+    def get_spotify_metrics(self, song_id: str) -> dict:
+        """
+        Retrieves metrics for a song from Spotify.
+
+        Args:
+            song_id (str): The ID of the song.
+
+        Returns:
+            dict: A dictionary containing metrics for the song.
+        """
+        metrics = self.sp.audio_features(song_id)[0]
+        metrics.pop('type')
+        metrics.pop('id')
+        metrics.pop('uri')
+        metrics.pop('track_href')
+        metrics.pop('analysis_url')
+        metrics.pop('duration_ms')
+        return metrics
+
     def get_user_saved_tracks(self):
         """
         Retrieves the user's saved tracks (liked songs) with their added dates.
@@ -209,9 +243,9 @@ class SpotifyAPI:
         tsv_path = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'likes.tsv')
         tracks = self.get_user_saved_tracks()
         with open(tsv_path, 'w') as f:
-            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\tSong Length (s)\tAdded At\n")
+            f.write("Track ID\tTrack Name\tTrack Url\tArtists\tAlbum\tSong Length (s)\tMetrics\tAdded At\n")
             for track in tracks:
-                f.write(f"{track['track_id']}\t{track['track_name']}\t{track['track_url']}\t{track['artists']}\t{track['album']}\t{track['song_length']}\t{track['added_at']}\n")
+                f.write(f"{track['track_id']}\t{track['track_name']}\t{track['track_url']}\t{track['artists']}\t{track['album']}\t{track['song_length']}\t{json.dumps(self.get_spotify_metrics(track['track_id']))}\t{track['added_at']}\n")
         print(f"\n{Style.BRIGHT}{Fore.GREEN}[SpotifyAPI]: Liked songs saved to {tsv_path.replace(os.path.join(os.path.dirname(__file__), '..', '..'), '')}{Style.RESET_ALL}\n")
 
 # Singleton instance of the SpotifyAPI class (for global use)
@@ -229,5 +263,28 @@ if __name__ == "__main__":
     #tsv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', f'{plist.lower().replace(' ', '_')}.tsv')
     # sp.load_playlist_to_tsv(plist, tsv)
 
+    # Testing with official Spotify playlists instead of user playlists
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'spotify_official_genre_mappings')):
+        os.makedirs(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'spotify_official_genre_mappings'))
+    # get date_str as DD_MM_YYYY
+    date_str = datetime.now().strftime("%d_%m_%Y")
+    country_playlists = [
+        {'name': 'Hot Country', 'uri': 'spotify:playlist:37i9dQZF1DX1lVhptIYRda', 'path': f'hot_country_{date_str}'},
+        {'name': 'All New Country', 'uri': 'spotify:playlist:37i9dQZF1DWVn8zvR5ROMB', 'path': f'all_new_country_{date_str}'},
+        {'name': 'Cozy Country', 'uri': 'spotify:playlist:37i9dQZF1DX1hFALgilvpL', 'path': f'cozy_country_{date_str}'},
+        {'name': 'Country Tailgate', 'uri': 'spotify:playlist:37i9dQZF1DX3ph0alWhOXm', 'path': f'country_tailgate_{date_str}'},
+        {'name': 'Breakout Country', 'uri': 'spotify:playlist:37i9dQZF1DWW7RgkOJG32Y', 'path': f'breakout_country_{date_str}'},
+        {'name': 'sad girl country', 'uri': 'spotify:playlist:37i9dQZF1DWU4lunzhQdRx', 'path': f'sad_girl_country_{date_str}'}
+    ]
+
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'spotify_official_genre_mappings', 'country')):
+        os.makedirs(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'spotify_official_genre_mappings', 'country'))
+    for playlist in country_playlists:
+        tsv = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'playlists', 'spotify_official_genre_mappings', 'country', f'{playlist["path"]}.tsv')
+        sp.load_playlist_to_tsv(playlist['uri'], tsv)
+
+    # test_song_id = '4DwQLjh6eCUHX8Ri4ZpG8v'
+    # print(sp.get_spotify_metrics(test_song_id))
+    # print(sp.get_song_analysis(test_song_id))
     
     #sp.load_likes_to_tsv()
