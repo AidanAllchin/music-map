@@ -5,6 +5,8 @@ Created on Thu Sep 19 2024
 
 This script extracts audio embeddings from audio files using a pre-trained VGGish model.
 It's also responsible for post-processing the embeddings.
+
+NOTE: I should consider switching this to pytorch - this is very 2018.
 """
 
 import os, sys
@@ -45,7 +47,7 @@ np.random.seed(42)
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'config.json')
 with open(CONFIG_PATH, 'r') as f:
-    config = json.load(f)
+    config  = json.load(f)
 use_gpu     = config['settings']['use_gpu']
 gpu_percent = config['settings']['gpu_percent']
 debug       = config['settings']['debug']
@@ -67,7 +69,6 @@ if use_gpu:
             print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.RED}Invalid device or cannot modify virtual devices once initialized.")
 else:
     print(f"{Style.BRIGHT}[Embeddings]: {Style.NORMAL}{Fore.YELLOW}GPU disabled. Switching to CPU...{Style.RESET_ALL}")
-
 
 
 def extract_one_embedding(file: str) -> np.ndarray:
