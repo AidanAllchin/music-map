@@ -38,7 +38,7 @@ async def find_best_link(search_query: str, target_length: float, threshold: int
     }
     search_query = search_query.replace(':', '-')
 
-    # Make it asynchronous for use in the batching
+    # Asynchronous for use in the batching
     async def extract_info_async(ydl_opts, search_query):
         loop = asyncio.get_event_loop()
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -73,7 +73,7 @@ async def find_best_link(search_query: str, target_length: float, threshold: int
             best_url = url
 
     if debug:
-        print(f"[ytdlp]: {Style.DIM} Target: {target_length}, Best: {best_length}, Diff: {best_diff}{Style.RESET_ALL}")
+        print(f"{Style.DIM}[ytdlp]: Target: {target_length}, Best: {best_length}, Diff: {best_diff}{Style.RESET_ALL}")
 
     if best_diff < threshold:
         #print(f"Best URL: {best_url}")
@@ -109,6 +109,8 @@ async def download_one_by_url(sp_id: int, url: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             for attempt in range(5):
                 try:
+                    if debug:
+                        print(f"{Fore.LIGHTBLUE_EX}[ytdlp]: {Style.DIM}Attempting download of {u} to {p}...{Style.RESET_ALL}")
                     await loop.run_in_executor(None, lambda: ydl.download([u]))
                     break
                 except yt_dlp.DownloadError as e:

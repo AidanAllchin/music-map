@@ -13,19 +13,43 @@ if not os.path.exists("requirements.txt"):
 
 subprocess.run(["pip", "install", "-r", "requirements.txt"])
 
+from colorama import Fore, Style
+
+def ensure_directory_exists(dir: str):
+    """
+    Ensures that the specified directory exists.
+    Args:
+        dir (str): The directory to check.
+    """
+    try:
+        os.makedirs(dir, exist_ok=True)
+        print(f"{Fore.GREEN}[init]: Created directory: {dir}{Style.RESET_ALL}")
+    except PermissionError:
+        print(f"{Fore.RED}[init]: {Style.DIM}Permission denied when creating directory: {dir}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}[init]: Attempting to create directory with sudo...{Style.RESET_ALL}")
+        try:
+            subprocess.run(['sudo', 'mkdir', '-p', dir], check=True)
+            subprocess.run(['sudo', 'chmod', '777', dir], check=True)
+            print(f"{Fore.GREEN}[init]: Successfully created directory with sudo.{Style.RESET_ALL}")
+        except subprocess.CalledProcessError as e:
+            print(f"{Fore.RED}[init]: Failed to create directory even with sudo: {e}{Style.RESET_ALL}")
+            raise
+
 # Create directories
 if not os.path.exists("data"):
-    os.makedirs("data")
-    os.makedirs("data/vggish_model")
-    os.makedirs("data/waveforms")
-    os.makedirs("data/embeddings")
-    os.makedirs("data/playlists")
+    ensure_directory_exists("data")
+    ensure_directory_exists("data/vggish_model")
+    ensure_directory_exists("data/waveforms")
+    ensure_directory_exists("data/embeddings")
+    ensure_directory_exists("data/playlists")
 elif not os.path.exists("data/vggish_model"):
-    os.makedirs("data/vggish_model")
+    ensure_directory_exists("data/vggish_model")
 elif not os.path.exists("data/waveforms"):
-    os.makedirs("data/waveforms")
+    ensure_directory_exists("data/waveforms")
 elif not os.path.exists("data/embeddings"):
-    os.makedirs("data/embeddings")
+    ensure_directory_exists("data/embeddings")
+elif not os.path.exists("data/playlists"):
+    ensure_directory_exists("data/playlists")
 
 # Download the VGGish model files (WIP)
 if not os.path.exists("data/vggish_model/vggish_model.ckpt") or not os.path.exists("data/vggish_model/vggish_pca_params.npz"):
