@@ -9,11 +9,125 @@
         "pca_params_path": "./data/vggish_model/vggish_pca_params.npz",
         "audio_destination_path": "/data/waveforms/",
         "yt_links_path": "/data/embeddings/yt_links_for_songs.tsv",
-        "spotify_token_path": "/config/spotify_token.json"
+        "spotify_token_path": "/config/spotify_token.json",
+        "playlists_path": "/data/playlists/"
     },
     "spotify": {
         "redirect_uri": "http://localhost:8888/callback",
         "client_id": "",
         "client_secret": ""
-    }
+    },
+    "baseline_data": [
+        {
+            "genre": "country",
+            "playlists": [
+                {"name": "Hot Country", "uri": "spotify:playlist:37i9dQZF1DX1lVhptIYRda", "path": "hot_country"},
+                {"name": "All New Country", "uri": "spotify:playlist:37i9dQZF1DWVn8zvR5ROMB", "path": "all_new_country"},
+                {"name": "Cozy Country", "uri": "spotify:playlist:37i9dQZF1DX1hFALgilvpL", "path": "cozy_country"},
+                {"name": "Country Tailgate", "uri": "spotify:playlist:37i9dQZF1DX3ph0alWhOXm", "path": "country_tailgate"},
+                {"name": "Breakout Country", "uri": "spotify:playlist:37i9dQZF1DWW7RgkOJG32Y", "path": "breakout_country"},
+                {"name": "sad girl country", "uri": "spotify:playlist:37i9dQZF1DWU4lunzhQdRx", "path": "sad_girl_country"}
+            ]
+        },
+        {
+            "genre": "60s",
+            "playlists": [
+                {"name": "All Out 60s", "uri": "spotify:playlist:37i9dQZF1DXaKIA8E7WcJj", "path": "all_out_60s"},
+                {"name": "Classic Oldies", "uri": "spotify:playlist:37i9dQZF1DX56bqlsMxJYR", "path": "classic_oldies_50s_60s"},
+                {"name": "Sixties Greatest Music Hits", "uri": "spotify:playlist:3SbE5Sk5MWtNc0GRTU0X6d", "path": "sixties_greatest_music_hits"},
+                {"name": "1960s Hits Classics", "uri": "spotify:playlist:4ZuX2YvKAlym0a8VozqV1U", "path": "1960s_hits_classics"}
+            ]
+        },
+        {
+            "genre": "70s",
+            "playlists": [
+                {"name": "70s Classic Rock Mix", "uri": "spotify:playlist:37i9dQZF1EIfw4gFV1rTyX", "path": "70s_classic_rock_mix"},
+                {"name": "All Out 70s", "uri": "spotify:playlist:37i9dQZF1DWTJ7xPn4vNaz", "path": "all_out_70s"}
+            ]
+        },
+        {
+            "genre": "80s",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "90s",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "pop",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "rock",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "rap",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "r&b",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "indie",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "alternative",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "edm",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "jazz",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "classical",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "metal",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "blues",
+            "playlists": [
+
+            ]
+        },
+        {
+            "genre": "reggae",
+            "playlists": [
+
+            ]
+        }
+    ]
 }
